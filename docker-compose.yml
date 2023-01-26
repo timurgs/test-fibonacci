@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  client:
+    build: rpc_client
+    environment:
+      AMQP_URL: 'amqp://rabbitmq?connection_attempts=5&retry_delay=5'
+    networks:
+      - network
+    depends_on:
+      - fibonacci
+  fibonacci:
+    build: rpc_server
+    environment:
+      AMQP_URL: 'amqp://rabbitmq?connection_attempts=5&retry_delay=5'
+    networks:
+      - network
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+  rabbitmq:
+    image: 'rabbitmq:3.6-management-alpine'
+    container_name: 'rabbitmq'
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "localhost", "5672" ]
+      timeout: 5s
+      retries: 1
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    networks:
+      - network
+
+networks:
+  network: {}
